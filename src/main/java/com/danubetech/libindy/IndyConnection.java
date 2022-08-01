@@ -31,6 +31,7 @@ public class IndyConnection {
     private Wallet wallet;
     private String submitterDid;
     private String taa;
+    private String taaVersion;
 
     public IndyConnection(String poolConfigName, String poolConfigFile, Integer poolVersion, String walletName, String submitterDidSeed, Long genesisTimestamp) {
         this.poolConfigName = poolConfigName;
@@ -226,10 +227,11 @@ public class IndyConnection {
                 JSONObject jsonObjectTAAResult = (jsonObjectTAA.has("result") && jsonObjectTAA.get("result") instanceof JSONObject) ? jsonObjectTAA.getJSONObject("result") : null;
                 JSONObject jsonObjectTAAResultData = (jsonObjectTAAResult != null && jsonObjectTAAResult.has("data") && jsonObjectTAAResult.get("data") instanceof JSONObject) ? jsonObjectTAAResult.getJSONObject("data") : null;
                 this.taa = jsonObjectTAAResultData == null ? null : jsonObjectTAAResultData.getString("text");
-                if (log.isInfoEnabled()) log.info("TAA \"" + this.taa + "\" successfully retrieved.");
+                this.taaVersion = jsonObjectTAAResultData == null ? null : jsonObjectTAAResultData.getString("version");
             } catch (IndyException | InterruptedException | ExecutionException ex) {
 
                 this.taa = null;
+                this.taaVersion = null;
                 throw new IndyConnectionException("Cannot retrieve TAA: " + ex.getMessage(), ex);
             }
         }
@@ -321,6 +323,14 @@ public class IndyConnection {
 
     public void setTaa(String taa) {
         this.taa = taa;
+    }
+
+    public String getTaaVersion() {
+        return taaVersion;
+    }
+
+    public void setTaaVersion(String taaVersion) {
+        this.taaVersion = taaVersion;
     }
 
     /*
