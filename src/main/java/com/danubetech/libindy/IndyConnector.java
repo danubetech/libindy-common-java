@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class IndyConnector {
@@ -61,7 +62,7 @@ public class IndyConnector {
         // parse pool configs
 
         String[] poolConfigStrings = this.getPoolConfigs() == null ? new String[0] : this.getPoolConfigs().split(";");
-        Map<String, String> poolConfigs = new HashMap<>();
+        Map<String, String> poolConfigs = new LinkedHashMap<>();
         for (int i=0; i<poolConfigStrings.length; i+=2) poolConfigs.put(poolConfigStrings[i], poolConfigStrings[i+1]);
 
         if (log.isInfoEnabled()) log.info("Pool configs: " + poolConfigs);
@@ -69,7 +70,7 @@ public class IndyConnector {
         // parse pool versions
 
         String[] poolVersionStrings = this.getPoolVersions() == null ? new String[0] : this.getPoolVersions().split(";");
-        Map<String, Integer> poolVersions = new HashMap<>();
+        Map<String, Integer> poolVersions = new LinkedHashMap<>();
         for (int i=0; i<poolVersionStrings.length; i+=2) poolVersions.put(poolVersionStrings[i], Integer.parseInt(poolVersionStrings[i+1]));
 
         if (log.isInfoEnabled()) log.info("Pool versions: " + poolVersions);
@@ -77,7 +78,7 @@ public class IndyConnector {
         // parse wallet names
 
         String[] walletNameStrings = this.getWalletNames() == null ? new String[0] : this.getWalletNames().split(";");
-        Map<String, String> walletNames = new HashMap<>();
+        Map<String, String> walletNames = new LinkedHashMap<>();
         for (int i=0; i<walletNameStrings.length; i+=2) walletNames.put(walletNameStrings[i], walletNameStrings[i+1]);
 
         if (log.isInfoEnabled()) log.info("Wallet names: " + walletNames);
@@ -85,7 +86,7 @@ public class IndyConnector {
         // parse submitter DID seeds
 
         String[] submitterDidSeedStrings = this.getSubmitterDidSeeds() == null ? new String[0] : this.getSubmitterDidSeeds().split(";");
-        Map<String, String> submitterDidSeeds = new HashMap<>();
+        Map<String, String> submitterDidSeeds = new LinkedHashMap<>();
         for (int i=0; i<submitterDidSeedStrings.length; i+=2) submitterDidSeeds.put(submitterDidSeedStrings[i], submitterDidSeedStrings[i+1]);
 
         if (log.isInfoEnabled()) log.info("Submitter DID seeds: " + submitterDidSeeds);
@@ -93,14 +94,14 @@ public class IndyConnector {
         // parse genesis timestamps
 
         String[] genesisTimestampStrings = this.getGenesisTimestamps() == null ? new String[0] : this.getGenesisTimestamps().split(";");
-        Map<String, Long> genesisTimestamps = new HashMap<>();
+        Map<String, Long> genesisTimestamps = new LinkedHashMap<>();
         for (int i=0; i<genesisTimestampStrings.length; i+=2) genesisTimestamps.put(genesisTimestampStrings[i], Long.parseLong(genesisTimestampStrings[i+1]));
 
         if (log.isInfoEnabled()) log.info("Genesis timestamps: " + genesisTimestamps);
 
         // create indy connections
 
-        Map<String, IndyConnection> indyConnections = new HashMap<>();
+        Map<String, IndyConnection> indyConnections = new LinkedHashMap<>();
 
         for (Map.Entry<String, String> poolConfigMapEntry : poolConfigs.entrySet()) {
 
