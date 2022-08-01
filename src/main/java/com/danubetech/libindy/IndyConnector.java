@@ -34,7 +34,13 @@ public class IndyConnector {
         return this.getIndyConnections() != null;
     }
 
-    public void closeIndyConnections() throws IndyConnectionException {
+    public synchronized void closeIndyConnections() throws IndyConnectionException {
+
+        if (this.getIndyConnections() == null) {
+            if (log.isWarnEnabled()) log.warn("Indy connections have not been opened and therefore cannot be closed.");
+            return;
+        }
+
         for (IndyConnection indyConnection : this.getIndyConnections().values()) {
             indyConnection.close();
         }
@@ -43,9 +49,14 @@ public class IndyConnector {
         System.gc();
     }
 
-    public void openIndyConnections(boolean createSubmitterDid, boolean retrieveTaa) throws IndyConnectionException {
+    public synchronized void openIndyConnections(boolean createSubmitterDid, boolean retrieveTaa) throws IndyConnectionException {
 
         if (this.getPoolConfigs() == null || this.getPoolConfigs().isEmpty()) throw new IllegalStateException("No configuration found for Indy connections.");
+
+        if (this.getIndyConnections() != null) {
+            if (log.isWarnEnabled()) log.warn("Indy connections have already been opened.");
+            return;
+        }
 
         // parse pool configs
 
