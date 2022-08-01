@@ -45,7 +45,7 @@ public class IndyConnection {
     public IndyConnection() {
     }
 
-    public void open(boolean createSubmitterDid, boolean retrieveTaa) throws IndyConnectionException {
+    public synchronized void open(boolean createSubmitterDid, boolean retrieveTaa) throws IndyConnectionException {
 
         this.openPool();
         this.openWallet();
@@ -53,7 +53,7 @@ public class IndyConnection {
         if (retrieveTaa) this.retrieveTaa();
     }
 
-    public void close() throws IndyConnectionException {
+    public synchronized void close() throws IndyConnectionException {
 
         // close wallet
 
@@ -99,141 +99,123 @@ public class IndyConnection {
         return this.getPool() != null && this.getWallet() != null;
     }
 
-    private void openPool() throws IndyConnectionException {
+    private synchronized void openPool() throws IndyConnectionException {
 
         // create pool config
 
-        synchronized(this) {
+        try {
 
-            try {
+            Pool.setProtocolVersion(this.getPoolVersion());
+            PoolJSONParameters.CreatePoolLedgerConfigJSONParameter createPoolLedgerConfigJSONParameter = new PoolJSONParameters.CreatePoolLedgerConfigJSONParameter(poolConfigFile);
+            Pool.createPoolLedgerConfig(this.getPoolConfigName(), createPoolLedgerConfigJSONParameter.toJson()).get();
+            if (log.isInfoEnabled()) log.info("Pool config \"" + this.getPoolConfigName() + "\" successfully created.");
+        } catch (IndyException | InterruptedException | ExecutionException ex) {
 
-                Pool.setProtocolVersion(this.getPoolVersion());
-                PoolJSONParameters.CreatePoolLedgerConfigJSONParameter createPoolLedgerConfigJSONParameter = new PoolJSONParameters.CreatePoolLedgerConfigJSONParameter(poolConfigFile);
-                Pool.createPoolLedgerConfig(this.getPoolConfigName(), createPoolLedgerConfigJSONParameter.toJson()).get();
-                if (log.isInfoEnabled()) log.info("Pool config \"" + this.getPoolConfigName() + "\" successfully created.");
-            } catch (IndyException | InterruptedException | ExecutionException ex) {
-
-                IndyException iex = null;
-                if (ex instanceof IndyException) iex = (IndyException) ex;
-                if (ex instanceof ExecutionException && ex.getCause() instanceof IndyException) iex = (IndyException) ex.getCause();
-                if (iex instanceof PoolLedgerConfigExistsException) {
-                    if (log.isInfoEnabled()) log.info("Pool config \"" + this.getPoolConfigName() + "\" has already been created.");
-                } else {
-                    throw new IndyConnectionException("Cannot create pool config \"" + this.getPoolConfigName() + "\": " + ex.getMessage(), ex);
-                }
+            IndyException iex = null;
+            if (ex instanceof IndyException) iex = (IndyException) ex;
+            if (ex instanceof ExecutionException && ex.getCause() instanceof IndyException) iex = (IndyException) ex.getCause();
+            if (iex instanceof PoolLedgerConfigExistsException) {
+                if (log.isInfoEnabled()) log.info("Pool config \"" + this.getPoolConfigName() + "\" has already been created.");
+            } else {
+                throw new IndyConnectionException("Cannot create pool config \"" + this.getPoolConfigName() + "\": " + ex.getMessage(), ex);
             }
         }
 
         // open pool
 
-        synchronized(this) {
+        try {
 
-            try {
+            Pool.setProtocolVersion(this.getPoolVersion());
 
-                Pool.setProtocolVersion(this.getPoolVersion());
+            PoolJSONParameters.OpenPoolLedgerJSONParameter openPoolLedgerJSONParameter = new PoolJSONParameters.OpenPoolLedgerJSONParameter(null, null);
+            this.pool = Pool.openPoolLedger(this.getPoolConfigName(), openPoolLedgerJSONParameter.toJson()).get();
+            if (log.isInfoEnabled()) log.info("Pool \"" + this.getPoolConfigName() + "\" (" + this.pool.getPoolHandle() + ") successfully opened.");
+        } catch (IndyException | InterruptedException | ExecutionException ex) {
 
-                PoolJSONParameters.OpenPoolLedgerJSONParameter openPoolLedgerJSONParameter = new PoolJSONParameters.OpenPoolLedgerJSONParameter(null, null);
-                this.pool = Pool.openPoolLedger(this.getPoolConfigName(), openPoolLedgerJSONParameter.toJson()).get();
-                if (log.isInfoEnabled()) log.info("Pool \"" + this.getPoolConfigName() + "\" (" + this.pool.getPoolHandle() + ") successfully opened.");
-            } catch (IndyException | InterruptedException | ExecutionException ex) {
-
-                this.pool = null;
-                if (log.isWarnEnabled()) log.warn("Cannot open pool \"" + this.getPoolConfigName() + "\": " + ex.getMessage(), ex);
-            }
+            this.pool = null;
+            if (log.isWarnEnabled()) log.warn("Cannot open pool \"" + this.getPoolConfigName() + "\": " + ex.getMessage(), ex);
         }
     }
 
-    private void openWallet() throws IndyConnectionException {
+    private synchronized void openWallet() throws IndyConnectionException {
 
         // create wallet
 
-        synchronized(this) {
+        try {
 
-            try {
+            String walletConfig = "{ \"id\":\"" + this.getWalletName() + "\", \"storage_type\":\"" + "default" + "\"}";
+            String walletCredentials = "{ \"key\":\"key\" }";
+            Wallet.createWallet(walletConfig, walletCredentials).get();
+            if (log.isInfoEnabled()) log.info("Wallet \"" + this.getWalletName() + "\" successfully created.");
+        } catch (IndyException | InterruptedException | ExecutionException ex) {
 
-                String walletConfig = "{ \"id\":\"" + this.getWalletName() + "\", \"storage_type\":\"" + "default" + "\"}";
-                String walletCredentials = "{ \"key\":\"key\" }";
-                Wallet.createWallet(walletConfig, walletCredentials).get();
-                if (log.isInfoEnabled()) log.info("Wallet \"" + this.getWalletName() + "\" successfully created.");
-            } catch (IndyException | InterruptedException | ExecutionException ex) {
-
-                IndyException iex = null;
-                if (ex instanceof IndyException) iex = (IndyException) ex;
-                if (ex instanceof ExecutionException && ex.getCause() instanceof IndyException) iex = (IndyException) ex.getCause();
-                if (iex instanceof WalletExistsException) {
-                    if (log.isInfoEnabled()) log.info("Wallet \"" + this.getWalletName() + "\" has already been created.");
-                } else {
-                    throw new IndyConnectionException("Cannot create wallet \"" + this.getWalletName() + "\": " + ex.getMessage(), ex);
-                }
+            IndyException iex = null;
+            if (ex instanceof IndyException) iex = (IndyException) ex;
+            if (ex instanceof ExecutionException && ex.getCause() instanceof IndyException) iex = (IndyException) ex.getCause();
+            if (iex instanceof WalletExistsException) {
+                if (log.isInfoEnabled()) log.info("Wallet \"" + this.getWalletName() + "\" has already been created.");
+            } else {
+                throw new IndyConnectionException("Cannot create wallet \"" + this.getWalletName() + "\": " + ex.getMessage(), ex);
             }
         }
 
         // open wallet
 
-        synchronized(this) {
+        try {
 
-            try {
+            String walletConfig = "{ \"id\":\"" + this.getWalletName() + "\", \"storage_type\":\"" + "default" + "\"}";
+            String walletCredentials = "{ \"key\":\"key\" }";
+            this.wallet = Wallet.openWallet(walletConfig, walletCredentials).get();
+            if (log.isInfoEnabled()) log.info("Wallet \"" + this.getWalletName() + "\" (" + this.wallet.getWalletHandle() + ") successfully opened.");
+        } catch (IndyException | InterruptedException | ExecutionException ex) {
 
-                String walletConfig = "{ \"id\":\"" + this.getWalletName() + "\", \"storage_type\":\"" + "default" + "\"}";
-                String walletCredentials = "{ \"key\":\"key\" }";
-                this.wallet = Wallet.openWallet(walletConfig, walletCredentials).get();
-                if (log.isInfoEnabled()) log.info("Wallet \"" + this.getWalletName() + "\" (" + this.wallet.getWalletHandle() + ") successfully opened.");
-            } catch (IndyException | InterruptedException | ExecutionException ex) {
-
-                this.wallet = null;
-                throw new IndyConnectionException("Cannot open wallet \"" + this.getWalletName() + "\": " + ex.getMessage(), ex);
-            }
+            this.wallet = null;
+            throw new IndyConnectionException("Cannot open wallet \"" + this.getWalletName() + "\": " + ex.getMessage(), ex);
         }
     }
 
-    public void createSubmitterDid() throws IndyConnectionException {
+    public synchronized void createSubmitterDid() throws IndyConnectionException {
 
         // create submitter DID
 
-        synchronized(this) {
+        try {
 
-            try {
+            String submitterDidSeed = this.getSubmitterDidSeed();
+            if (submitterDidSeed != null && submitterDidSeed.isEmpty()) submitterDidSeed = null;
+            if ("_".equals(submitterDidSeed)) submitterDidSeed = null;
+            DidJSONParameters.CreateAndStoreMyDidJSONParameter createAndStoreMyDidJSONParameterTrustee = new DidJSONParameters.CreateAndStoreMyDidJSONParameter(null, submitterDidSeed, null, null);
+            DidResults.CreateAndStoreMyDidResult createAndStoreMyDidResultTrustee = Did.createAndStoreMyDid(this.getWallet(), createAndStoreMyDidJSONParameterTrustee.toJson()).get();
+            this.submitterDid = createAndStoreMyDidResultTrustee.getDid();
+            if (log.isInfoEnabled()) log.info("Submitter DID \"" + this.submitterDid + "\" successfully created.");
+        } catch (IndyException | InterruptedException | ExecutionException ex) {
 
-                String submitterDidSeed = this.getSubmitterDidSeed();
-                if (submitterDidSeed != null && submitterDidSeed.isEmpty()) submitterDidSeed = null;
-                if ("_".equals(submitterDidSeed)) submitterDidSeed = null;
-                DidJSONParameters.CreateAndStoreMyDidJSONParameter createAndStoreMyDidJSONParameterTrustee = new DidJSONParameters.CreateAndStoreMyDidJSONParameter(null, submitterDidSeed, null, null);
-                DidResults.CreateAndStoreMyDidResult createAndStoreMyDidResultTrustee = Did.createAndStoreMyDid(this.getWallet(), createAndStoreMyDidJSONParameterTrustee.toJson()).get();
-                this.submitterDid = createAndStoreMyDidResultTrustee.getDid();
-                if (log.isInfoEnabled()) log.info("Submitter DID \"" + this.submitterDid + "\" successfully created.");
-            } catch (IndyException | InterruptedException | ExecutionException ex) {
-
-                this.submitterDid = null;
-                throw new IndyConnectionException("Cannot create submitter DID: " + ex.getMessage(), ex);
-            }
+            this.submitterDid = null;
+            throw new IndyConnectionException("Cannot create submitter DID: " + ex.getMessage(), ex);
         }
     }
 
-    public void retrieveTaa() throws IndyConnectionException {
+    public synchronized void retrieveTaa() throws IndyConnectionException {
 
         // retrieve TAA
 
-        synchronized(this) {
+        try {
 
-            try {
+            Pool.setProtocolVersion(this.getPoolVersion());
 
-                Pool.setProtocolVersion(this.getPoolVersion());
+            String getTxnAuthorAgreementRequest = Ledger.buildGetTxnAuthorAgreementRequest(this.getSubmitterDid(), null).get();
+            String getTxnAuthorAgreementResult = Ledger.signAndSubmitRequest(this.getPool(), this.getWallet(), this.getSubmitterDid(), getTxnAuthorAgreementRequest).get();
+            if (log.isDebugEnabled()) log.debug("getTxnAuthorAgreementResult: (" + getTxnAuthorAgreementResult.length() + ") " + getTxnAuthorAgreementResult);
 
-                String getTxnAuthorAgreementRequest = Ledger.buildGetTxnAuthorAgreementRequest(this.getSubmitterDid(), null).get();
-                String getTxnAuthorAgreementResult = Ledger.signAndSubmitRequest(this.getPool(), this.getWallet(), this.getSubmitterDid(), getTxnAuthorAgreementRequest).get();
-                if (log.isDebugEnabled()) log.debug("getTxnAuthorAgreementResult: (" + getTxnAuthorAgreementResult.length() + ") " + getTxnAuthorAgreementResult);
+            JSONObject jsonObjectTAA = new JSONObject(getTxnAuthorAgreementResult);
+            JSONObject jsonObjectTAAResult = (jsonObjectTAA.has("result") && jsonObjectTAA.get("result") instanceof JSONObject) ? jsonObjectTAA.getJSONObject("result") : null;
+            JSONObject jsonObjectTAAResultData = (jsonObjectTAAResult != null && jsonObjectTAAResult.has("data") && jsonObjectTAAResult.get("data") instanceof JSONObject) ? jsonObjectTAAResult.getJSONObject("data") : null;
+            this.taa = jsonObjectTAAResultData == null ? null : jsonObjectTAAResultData.getString("text");
+            this.taaVersion = jsonObjectTAAResultData == null ? null : jsonObjectTAAResultData.getString("version");
+        } catch (IndyException | InterruptedException | ExecutionException ex) {
 
-                JSONObject jsonObjectTAA = new JSONObject(getTxnAuthorAgreementResult);
-                JSONObject jsonObjectTAAResult = (jsonObjectTAA.has("result") && jsonObjectTAA.get("result") instanceof JSONObject) ? jsonObjectTAA.getJSONObject("result") : null;
-                JSONObject jsonObjectTAAResultData = (jsonObjectTAAResult != null && jsonObjectTAAResult.has("data") && jsonObjectTAAResult.get("data") instanceof JSONObject) ? jsonObjectTAAResult.getJSONObject("data") : null;
-                this.taa = jsonObjectTAAResultData == null ? null : jsonObjectTAAResultData.getString("text");
-                this.taaVersion = jsonObjectTAAResultData == null ? null : jsonObjectTAAResultData.getString("version");
-            } catch (IndyException | InterruptedException | ExecutionException ex) {
-
-                this.taa = null;
-                this.taaVersion = null;
-                throw new IndyConnectionException("Cannot retrieve TAA: " + ex.getMessage(), ex);
-            }
+            this.taa = null;
+            this.taaVersion = null;
+            throw new IndyConnectionException("Cannot retrieve TAA: " + ex.getMessage(), ex);
         }
     }
 
