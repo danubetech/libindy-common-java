@@ -127,6 +127,20 @@ public class IndyConnector {
         this.indyConnections = indyConnections;
     }
 
+    public synchronized IndyConnection getIndyConnection(String network, boolean autoReopen, boolean createSubmitterDid, boolean retrieveTaa) throws IndyConnectionException {
+
+        IndyConnection indyConnection = this.getIndyConnections().get(network);
+        if (indyConnection == null) return null;
+
+        if (autoReopen && (! indyConnection.isOpen())) {
+            if (log.isInfoEnabled()) log.info("Auto re-opening Indy connection for network " + network + ": " + indyConnection);
+            indyConnection.close();
+            indyConnection.open(createSubmitterDid, retrieveTaa);
+        }
+
+        return indyConnection;
+    }
+
     /*
      * Getters and setters
      */
