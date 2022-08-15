@@ -32,6 +32,7 @@ public class IndyConnection {
     private Pool pool;
     private Wallet wallet;
     private String submitterDid;
+    private Boolean randomSubmitterDid;
     private String taa;
     private String taaVersion;
 
@@ -190,7 +191,8 @@ public class IndyConnection {
             DidJSONParameters.CreateAndStoreMyDidJSONParameter createAndStoreMyDidJSONParameterTrustee = new DidJSONParameters.CreateAndStoreMyDidJSONParameter(null, submitterDidSeed, null, null);
             DidResults.CreateAndStoreMyDidResult createAndStoreMyDidResultTrustee = Did.createAndStoreMyDid(this.getWallet(), createAndStoreMyDidJSONParameterTrustee.toJson()).get();
             this.submitterDid = createAndStoreMyDidResultTrustee.getDid();
-            if (log.isInfoEnabled()) log.info("Submitter DID \"" + this.submitterDid + "\" successfully created.");
+            this.randomSubmitterDid = submitterDidSeed == null;
+            if (log.isInfoEnabled()) log.info("Submitter DID \"" + this.submitterDid + "\" (random: " + this.randomSubmitterDid + ") successfully created.");
         } catch (IndyException | InterruptedException | ExecutionException ex) {
 
             this.submitterDid = null;
@@ -271,7 +273,7 @@ public class IndyConnection {
         this.poolVersion = poolVersion;
     }
 
-    public Boolean getNativeDidIndy() {
+    public Boolean isNativeDidIndy() {
         return nativeDidIndy;
     }
 
@@ -325,6 +327,14 @@ public class IndyConnection {
 
     public void setSubmitterDid(String submitterDid) {
         this.submitterDid = submitterDid;
+    }
+
+    public Boolean isRandomSubmitterDid() {
+        return randomSubmitterDid;
+    }
+
+    public void setRandomSubmitterDid(Boolean randomSubmitterDid) {
+        this.randomSubmitterDid = randomSubmitterDid;
     }
 
     public String getTaa() {
