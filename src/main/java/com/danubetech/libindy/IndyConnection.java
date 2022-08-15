@@ -20,9 +20,11 @@ public class IndyConnection {
 
     private static Logger log = LoggerFactory.getLogger(IndyConnection.class);
 
+    private String network;
     private String poolConfigName;
     private String poolConfigFile;
     private Integer poolVersion;
+    private Boolean nativeDidIndy;
     private String walletName;
     private String submitterDidSeed;
     private Long genesisTimestamp;
@@ -33,10 +35,12 @@ public class IndyConnection {
     private String taa;
     private String taaVersion;
 
-    public IndyConnection(String poolConfigName, String poolConfigFile, Integer poolVersion, String walletName, String submitterDidSeed, Long genesisTimestamp) {
+    public IndyConnection(String network, String poolConfigName, String poolConfigFile, Integer poolVersion, Boolean nativeDidIndy, String walletName, String submitterDidSeed, Long genesisTimestamp) {
+        this.network = network;
         this.poolConfigName = poolConfigName;
         this.poolConfigFile = poolConfigFile;
         this.poolVersion = poolVersion;
+        this.nativeDidIndy = nativeDidIndy;
         this.walletName = walletName;
         this.submitterDidSeed = submitterDidSeed;
         this.genesisTimestamp = genesisTimestamp;
@@ -58,7 +62,7 @@ public class IndyConnection {
         // close wallet
 
         if (this.wallet != null) {
-            if (log.isDebugEnabled()) log.debug("On connection " + this.getPoolConfigName() + " closing wallet: " + this.wallet.getWalletHandle());
+            if (log.isDebugEnabled()) log.debug("On connection " + this.getNetwork() + " closing wallet: " + this.wallet.getWalletHandle());
             synchronized(this) {
                 try {
                     this.wallet.close();
@@ -73,7 +77,7 @@ public class IndyConnection {
         // close pool
 
         if (this.pool != null) {
-            if (log.isDebugEnabled()) log.debug("On connection " + this.getPoolConfigName() + " closing pool: " + this.pool.getPoolHandle());
+            if (log.isDebugEnabled()) log.debug("On connection " + this.getNetwork() + " closing pool: " + this.pool.getPoolHandle());
             synchronized(this) {
                 try {
                     this.pool.close();
@@ -92,7 +96,7 @@ public class IndyConnection {
 
         // done
 
-        if (log.isDebugEnabled()) log.debug("On connection " + this.getPoolConfigName() + " closed pool and wallet.");
+        if (log.isDebugEnabled()) log.debug("On connection " + this.getNetwork() + " closed pool and wallet.");
     }
 
     public boolean isOpen() {
@@ -219,13 +223,29 @@ public class IndyConnection {
         }
     }
 
+    public static String getNetwork(String didNetworkPrefix) {
+        return didNetworkPrefix.equals("") ? "_" : didNetworkPrefix.substring(0, didNetworkPrefix.length()-1);
+    }
+
+    public static String getDidNetworkPrefix(String network) {
+        return network.equals("_") ? "" : (network + ":");
+    }
+
     public String getDidNetworkPrefix() {
-        return this.getPoolConfigName().equals("_") ? "" : (this.getPoolConfigName() + ":");
+        return getDidNetworkPrefix(this.getNetwork());
     }
 
     /*
      * Getters and setters
      */
+
+    public String getNetwork() {
+        return network;
+    }
+
+    public void setNetwork(String network) {
+        this.network = network;
+    }
 
     public String getPoolConfigName() {
         return poolConfigName;
@@ -249,6 +269,14 @@ public class IndyConnection {
 
     public void setPoolVersion(Integer poolVersion) {
         this.poolVersion = poolVersion;
+    }
+
+    public Boolean getNativeDidIndy() {
+        return nativeDidIndy;
+    }
+
+    public void setNativeDidIndy(Boolean nativeDidIndy) {
+        this.nativeDidIndy = nativeDidIndy;
     }
 
     public String getWalletName() {
@@ -320,6 +348,6 @@ public class IndyConnection {
      */
 
     public String toString() {
-        return this.getPoolConfigFile() + " / " + this.getPoolVersion() + " / " + this.getPool();
+        return this.getNetwork() + " / " + this.getPoolVersion() + " / " + this.getPool();
     }
 }

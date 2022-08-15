@@ -3,7 +3,6 @@ package com.danubetech.libindy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -62,16 +61,30 @@ public class IndyConnector {
         // parse pool configs
 
         String[] poolConfigStrings = this.getPoolConfigs() == null ? new String[0] : this.getPoolConfigs().split(";");
-        Map<String, String> poolConfigs = new LinkedHashMap<>();
-        for (int i=0; i<poolConfigStrings.length; i+=2) poolConfigs.put(poolConfigStrings[i], poolConfigStrings[i+1]);
+        Map<String, String> poolConfigNames = new LinkedHashMap<>();
+        Map<String, String> poolConfigFiles = new LinkedHashMap<>();
+        for (int i=0; i<poolConfigStrings.length; i+=2) {
+            String network = poolConfigStrings[i];
+            String poolConfigName = network;
+            String poolConfigFile = poolConfigStrings[i+1];
+            poolConfigNames.put(network, poolConfigName);
+            poolConfigFiles.put(network, poolConfigFile);
+        }
 
-        if (log.isInfoEnabled()) log.info("Pool configs: " + poolConfigs);
+        if (log.isInfoEnabled()) log.info("Pool configs: " + poolConfigFiles);
 
         // parse pool versions
 
         String[] poolVersionStrings = this.getPoolVersions() == null ? new String[0] : this.getPoolVersions().split(";");
         Map<String, Integer> poolVersions = new LinkedHashMap<>();
-        for (int i=0; i<poolVersionStrings.length; i+=2) poolVersions.put(poolVersionStrings[i], Integer.parseInt(poolVersionStrings[i+1]));
+        Map<String, Boolean> nativeDidIndys = new LinkedHashMap<>();
+        for (int i=0; i<poolVersionStrings.length; i+=2) {
+            String network = poolVersionStrings[i];
+            Integer poolVersion = poolVersionStrings[i+1].endsWith("i") ? Integer.parseInt(poolVersionStrings[i+1].substring(0, poolVersionStrings[i+1].length()-1)) : Integer.parseInt(poolVersionStrings[i+1]);
+            Boolean nativeDidIndy = poolVersionStrings[i+1].endsWith("i");
+            poolVersions.put(network, poolVersion);
+            nativeDidIndys.put(network, nativeDidIndy);
+        }
 
         if (log.isInfoEnabled()) log.info("Pool versions: " + poolVersions);
 
@@ -79,7 +92,11 @@ public class IndyConnector {
 
         String[] walletNameStrings = this.getWalletNames() == null ? new String[0] : this.getWalletNames().split(";");
         Map<String, String> walletNames = new LinkedHashMap<>();
-        for (int i=0; i<walletNameStrings.length; i+=2) walletNames.put(walletNameStrings[i], walletNameStrings[i+1]);
+        for (int i=0; i<walletNameStrings.length; i+=2) {
+            String network = walletNameStrings[i];
+            String walletName = walletNameStrings[i+1];
+            walletNames.put(network, walletName);
+        }
 
         if (log.isInfoEnabled()) log.info("Wallet names: " + walletNames);
 
@@ -87,7 +104,11 @@ public class IndyConnector {
 
         String[] submitterDidSeedStrings = this.getSubmitterDidSeeds() == null ? new String[0] : this.getSubmitterDidSeeds().split(";");
         Map<String, String> submitterDidSeeds = new LinkedHashMap<>();
-        for (int i=0; i<submitterDidSeedStrings.length; i+=2) submitterDidSeeds.put(submitterDidSeedStrings[i], submitterDidSeedStrings[i+1]);
+        for (int i=0; i<submitterDidSeedStrings.length; i+=2) {
+            String network = submitterDidSeedStrings[i];
+            String submitterDidSeed = submitterDidSeedStrings[i+1];
+            submitterDidSeeds.put(network, submitterDidSeed);
+        }
 
         if (log.isInfoEnabled()) log.info("Submitter DID seeds: " + submitterDidSeeds);
 
@@ -95,7 +116,11 @@ public class IndyConnector {
 
         String[] genesisTimestampStrings = this.getGenesisTimestamps() == null ? new String[0] : this.getGenesisTimestamps().split(";");
         Map<String, Long> genesisTimestamps = new LinkedHashMap<>();
-        for (int i=0; i<genesisTimestampStrings.length; i+=2) genesisTimestamps.put(genesisTimestampStrings[i], Long.parseLong(genesisTimestampStrings[i+1]));
+        for (int i=0; i<genesisTimestampStrings.length; i+=2) {
+            String network = genesisTimestampStrings[i];
+            Long genesisTimestamp = Long.parseLong(genesisTimestampStrings[i+1]);
+            genesisTimestamps.put(network, genesisTimestamp);
+        }
 
         if (log.isInfoEnabled()) log.info("Genesis timestamps: " + genesisTimestamps);
 
@@ -103,24 +128,27 @@ public class IndyConnector {
 
         Map<String, IndyConnection> indyConnections = new LinkedHashMap<>();
 
-        for (Map.Entry<String, String> poolConfigMapEntry : poolConfigs.entrySet()) {
+        for (String network : poolConfigFiles.keySet()) {
 
-            String poolConfigName = poolConfigMapEntry.getKey();
-            String poolConfigFile = poolConfigMapEntry.getValue();
-            Integer poolVersion = poolVersions.get(poolConfigName);
-            String walletName = walletNames.get(poolConfigName);
-            String submitterDidSeed = submitterDidSeeds.get(poolConfigName);
-            Long genesisTimestamp = genesisTimestamps.get(poolConfigName);
+            String poolConfigName = poolConfigNames.get(network);
+            String poolConfigFile = poolConfigFiles.get(network);
+            Integer poolVersion = poolVersions.get(network);
+            Boolean nativeDidIndy = nativeDidIndys.get(network);
+            String walletName = walletNames.get(network);
+            String submitterDidSeed = submitterDidSeeds.get(network);
+            Long genesisTimestamp = genesisTimestamps.get(network);
 
-            if (poolConfigFile == null) throw new IndyConnectionException("No pool config file for pool: " + poolConfigName);
-            if (poolVersion == null) throw new IndyConnectionException("No pool version for pool: " + poolConfigName);
-            if (walletName == null) throw new IndyConnectionException("No wallet name for pool: " + poolConfigName);
-            if (submitterDidSeed == null) throw new IndyConnectionException("No submitter DID seed for pool: " + poolConfigName);
+            if (poolConfigName == null) throw new IndyConnectionException("No 'poolConfigName' for network: " + network);
+            if (poolConfigFile == null) throw new IndyConnectionException("No 'poolConfigFile' for network: " + network);
+            if (poolVersion == null) throw new IndyConnectionException("No 'poolVersion' for network: " + network);
+            if (nativeDidIndy == null) throw new IndyConnectionException("No 'nativeDidIndy' for network: " + network);
+            if (walletName == null) throw new IndyConnectionException("No 'walletName' for network: " + network);
+            if (submitterDidSeed == null) throw new IndyConnectionException("No 'submitterDidSeed' for network: " + network);
 
-            IndyConnection indyConnection = new IndyConnection(poolConfigName, poolConfigFile, poolVersion, walletName, submitterDidSeed, genesisTimestamp);
+            IndyConnection indyConnection = new IndyConnection(network, poolConfigName, poolConfigFile, poolVersion, nativeDidIndy, walletName, submitterDidSeed, genesisTimestamp);
             indyConnection.open(createSubmitterDid, retrieveTaa);
 
-            indyConnections.put(poolConfigName, indyConnection);
+            indyConnections.put(network, indyConnection);
         }
 
         if (log.isInfoEnabled()) log.info("Opened " + indyConnections.size() + " Indy connections: " + indyConnections.keySet());
