@@ -25,6 +25,10 @@ public class IndyConnection {
     private String poolConfigFile;
     private Integer poolVersion;
     private Boolean nativeDidIndy;
+    private Boolean nymAddSignMulti;
+    private Boolean nymEditSignMulti;
+    private Boolean attribAddSignMulti;
+    private Boolean attribEditSignMulti;
     private String walletName;
     private String submitterDidSeed;
     private Long genesisTimestamp;
@@ -36,12 +40,16 @@ public class IndyConnection {
     private String taa;
     private String taaVersion;
 
-    public IndyConnection(String network, String poolConfigName, String poolConfigFile, Integer poolVersion, Boolean nativeDidIndy, String walletName, String submitterDidSeed, Long genesisTimestamp) {
+    public IndyConnection(String network, String poolConfigName, String poolConfigFile, Integer poolVersion, Boolean nativeDidIndy, Boolean nymAddSignMulti, Boolean nymEditSignMulti, Boolean attribAddSignMulti, Boolean attribEditSignMulti, String walletName, String submitterDidSeed, Long genesisTimestamp) {
         this.network = network;
         this.poolConfigName = poolConfigName;
         this.poolConfigFile = poolConfigFile;
         this.poolVersion = poolVersion;
         this.nativeDidIndy = nativeDidIndy;
+        this.nymAddSignMulti = nymAddSignMulti;
+        this.nymEditSignMulti = nymEditSignMulti;
+        this.attribAddSignMulti = attribAddSignMulti;
+        this.attribEditSignMulti = attribEditSignMulti;
         this.walletName = walletName;
         this.submitterDidSeed = submitterDidSeed;
         this.genesisTimestamp = genesisTimestamp;
@@ -279,6 +287,38 @@ public class IndyConnection {
 
     public void setNativeDidIndy(Boolean nativeDidIndy) {
         this.nativeDidIndy = nativeDidIndy;
+    }
+
+    public Boolean getNymAddSignMulti() {
+        return nymAddSignMulti;
+    }
+
+    public void setNymAddSignMulti(Boolean nymAddSignMulti) {
+        this.nymAddSignMulti = nymAddSignMulti;
+    }
+
+    public Boolean getNymEditSignMulti() {
+        return nymEditSignMulti;
+    }
+
+    public void setNymEditSignMulti(Boolean nymEditSignMulti) {
+        this.nymEditSignMulti = nymEditSignMulti;
+    }
+
+    public Boolean getAttribAddSignMulti() {
+        return attribAddSignMulti;
+    }
+
+    public void setAttribAddSignMulti(Boolean attribAddSignMulti) {
+        this.attribAddSignMulti = attribAddSignMulti;
+    }
+
+    public Boolean getAttribEditSignMulti() {
+        return attribEditSignMulti;
+    }
+
+    public void setAttribEditSignMulti(Boolean attribEditSignMulti) {
+        this.attribEditSignMulti = attribEditSignMulti;
     }
 
     public String getWalletName() {

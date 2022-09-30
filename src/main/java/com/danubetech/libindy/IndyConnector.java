@@ -71,22 +71,41 @@ public class IndyConnector {
             poolConfigFiles.put(network, poolConfigFile);
         }
 
-        if (log.isInfoEnabled()) log.info("Pool configs: " + poolConfigFiles);
+        if (log.isInfoEnabled()) log.info("poolConfigNames: " + poolConfigNames);
+        if (log.isInfoEnabled()) log.info("poolConfigFiles: " + poolConfigFiles);
 
         // parse pool versions
 
         String[] poolVersionStrings = this.getPoolVersions() == null ? new String[0] : this.getPoolVersions().split(";");
         Map<String, Integer> poolVersions = new LinkedHashMap<>();
         Map<String, Boolean> nativeDidIndys = new LinkedHashMap<>();
+        Map<String, Boolean> nymAddSignMultis = new LinkedHashMap<>();
+        Map<String, Boolean> nymEditSignMultis = new LinkedHashMap<>();
+        Map<String, Boolean> attribAddSignMultis = new LinkedHashMap<>();
+        Map<String, Boolean> attribEditSignMultis = new LinkedHashMap<>();
         for (int i=0; i<poolVersionStrings.length; i+=2) {
             String network = poolVersionStrings[i];
-            Integer poolVersion = poolVersionStrings[i+1].endsWith("i") ? Integer.parseInt(poolVersionStrings[i+1].substring(0, poolVersionStrings[i+1].length()-1)) : Integer.parseInt(poolVersionStrings[i+1]);
-            Boolean nativeDidIndy = poolVersionStrings[i+1].endsWith("i");
+            String poolVersionString = poolVersionStrings[i+1];
+            Integer poolVersion = Integer.parseInt(poolVersionString.substring(0, 1));
+            Boolean nativeDidIndy = poolVersionString.contains("i");
+            Boolean nymAddSignMulti = poolVersionString.contains("N");
+            Boolean nymEditSignMulti = poolVersionString.contains("n");
+            Boolean attribAddSignMulti = poolVersionString.contains("A");
+            Boolean attribEditSignMulti = poolVersionString.contains("a");
             poolVersions.put(network, poolVersion);
             nativeDidIndys.put(network, nativeDidIndy);
+            nymAddSignMultis.put(network, nymAddSignMulti);
+            nymEditSignMultis.put(network, nymEditSignMulti);
+            attribAddSignMultis.put(network, attribAddSignMulti);
+            attribEditSignMultis.put(network, attribEditSignMulti);
         }
 
-        if (log.isInfoEnabled()) log.info("Pool versions: " + poolVersions);
+        if (log.isInfoEnabled()) log.info("poolVersions: " + poolVersions);
+        if (log.isInfoEnabled()) log.info("nativeDidIndys: " + nativeDidIndys);
+        if (log.isInfoEnabled()) log.info("nymAddSignMultis: " + nymAddSignMultis);
+        if (log.isInfoEnabled()) log.info("nymEditSignMultis: " + nymEditSignMultis);
+        if (log.isInfoEnabled()) log.info("attribAddSignMultis: " + attribAddSignMultis);
+        if (log.isInfoEnabled()) log.info("attribEditSignMultis: " + attribEditSignMultis);
 
         // parse wallet names
 
@@ -134,6 +153,10 @@ public class IndyConnector {
             String poolConfigFile = poolConfigFiles.get(network);
             Integer poolVersion = poolVersions.get(network);
             Boolean nativeDidIndy = nativeDidIndys.get(network);
+            Boolean nymAddSignMulti = nymAddSignMultis.get(network);
+            Boolean nymEditSignMulti = nymEditSignMultis.get(network);
+            Boolean attribAddSignMulti = attribAddSignMultis.get(network);
+            Boolean attribEditSignMulti = attribEditSignMultis.get(network);
             String walletName = walletNames.get(network);
             String submitterDidSeed = submitterDidSeeds.get(network);
             Long genesisTimestamp = genesisTimestamps.get(network);
@@ -142,10 +165,14 @@ public class IndyConnector {
             if (poolConfigFile == null) throw new IndyConnectionException("No 'poolConfigFile' for network: " + network);
             if (poolVersion == null) throw new IndyConnectionException("No 'poolVersion' for network: " + network);
             if (nativeDidIndy == null) throw new IndyConnectionException("No 'nativeDidIndy' for network: " + network);
+            if (nymAddSignMulti == null) throw new IndyConnectionException("No 'nymAddSignMulti' for network: " + network);
+            if (nymEditSignMulti == null) throw new IndyConnectionException("No 'nymEditSignMulti' for network: " + network);
+            if (attribAddSignMulti == null) throw new IndyConnectionException("No 'attribAddSignMulti' for network: " + network);
+            if (attribEditSignMulti == null) throw new IndyConnectionException("No 'attribEditSignMulti' for network: " + network);
             if (walletName == null) throw new IndyConnectionException("No 'walletName' for network: " + network);
             if (submitterDidSeed == null) throw new IndyConnectionException("No 'submitterDidSeed' for network: " + network);
 
-            IndyConnection indyConnection = new IndyConnection(network, poolConfigName, poolConfigFile, poolVersion, nativeDidIndy, walletName, submitterDidSeed, genesisTimestamp);
+            IndyConnection indyConnection = new IndyConnection(network, poolConfigName, poolConfigFile, poolVersion, nativeDidIndy, nymAddSignMulti, nymEditSignMulti, attribAddSignMulti, attribEditSignMulti, walletName, submitterDidSeed, genesisTimestamp);
             indyConnection.open(createSubmitterDid, retrieveTaa);
 
             indyConnections.put(network, indyConnection);
