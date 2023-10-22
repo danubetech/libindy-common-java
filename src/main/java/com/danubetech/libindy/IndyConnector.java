@@ -8,7 +8,7 @@ import java.util.Map;
 
 public class IndyConnector {
 
-    private static Logger log = LoggerFactory.getLogger(IndyConnector.class);
+    private static final Logger log = LoggerFactory.getLogger(IndyConnector.class);
 
     private String poolConfigs;
     private String poolVersions;

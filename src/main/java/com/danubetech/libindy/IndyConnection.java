@@ -18,7 +18,7 @@ import java.util.concurrent.ExecutionException;
 
 public class IndyConnection {
 
-    private static Logger log = LoggerFactory.getLogger(IndyConnection.class);
+    private static final Logger log = LoggerFactory.getLogger(IndyConnection.class);
 
     private String network;
     private String poolConfigName;
@@ -234,7 +234,7 @@ public class IndyConnection {
     }
 
     public static String getNetwork(String didNetworkPrefix) {
-        return didNetworkPrefix.equals("") ? "_" : didNetworkPrefix.substring(0, didNetworkPrefix.length()-1);
+        return didNetworkPrefix.isEmpty() ? "_" : didNetworkPrefix.substring(0, didNetworkPrefix.length()-1);
     }
 
     public static String getDidNetworkPrefix(String network) {

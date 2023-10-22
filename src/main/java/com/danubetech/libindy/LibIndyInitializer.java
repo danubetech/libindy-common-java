@@ -8,7 +8,7 @@ import java.io.File;
 
 public class LibIndyInitializer {
 
-    private static Logger log = LoggerFactory.getLogger(LibIndyInitializer.class);
+    private static final Logger log = LoggerFactory.getLogger(LibIndyInitializer.class);
 
     private String libIndyPath;
 

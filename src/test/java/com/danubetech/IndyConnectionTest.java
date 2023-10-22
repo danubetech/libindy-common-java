@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class IndyConnectionTest {
 
     @Test
-    public void testIndyConnectionNetwork() throws Exception {
+    public void testIndyConnectionNetwork() {
 
         assertEquals(IndyConnection.getNetwork(""), "_");
         assertEquals(IndyConnection.getNetwork("dummy:"), "dummy");
