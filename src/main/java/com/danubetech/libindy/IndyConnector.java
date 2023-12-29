@@ -3,10 +3,7 @@ package com.danubetech.libindy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class IndyConnector {
 
@@ -147,8 +144,8 @@ public class IndyConnector {
 
         // create indy connections
 
-        Map<String, IndyConnection> indyConnections = new LinkedHashMap<>();
-        List<IndyConnectionException> exceptions = new ArrayList<>();
+        Map<String, IndyConnection> indyConnections = Collections.synchronizedMap(new LinkedHashMap<>());
+        List<IndyConnectionException> exceptions = Collections.synchronizedList(new ArrayList<>());
         poolConfigFiles.keySet().parallelStream().forEach(network -> {
             String poolConfigName = poolConfigNames.get(network);
             String poolConfigFile = poolConfigFiles.get(network);
@@ -172,28 +169,29 @@ public class IndyConnector {
             if (attribEditSignMulti == null) exceptions.add(new IndyConnectionException("No 'attribEditSignMulti' for network: " + network));
             if (walletName == null) exceptions.add(new IndyConnectionException("No 'walletName' for network: " + network));
             if (submitterDidSeed == null) exceptions.add(new IndyConnectionException("No 'submitterDidSeed' for network: " + network));
-            if (poolVersion == null || nativeDidIndy == null || nymAddSignMulti == null || nymEditSignMulti == null
-            || attribAddSignMulti == null || attribEditSignMulti == null || walletName == null || submitterDidSeed == null)
-                return;
+            if (poolVersion == null || nativeDidIndy == null || nymAddSignMulti == null || nymEditSignMulti == null || attribAddSignMulti == null || attribEditSignMulti == null || walletName == null || submitterDidSeed == null) return;
             IndyConnection indyConnection = new IndyConnection(network, poolConfigName, poolConfigFile, poolVersion, nativeDidIndy, nymAddSignMulti, nymEditSignMulti, attribAddSignMulti, attribEditSignMulti, walletName, submitterDidSeed, genesisTimestamp);
             try {
                 indyConnection.open(createSubmitterDid, retrieveTaa);
-            } catch (IndyConnectionException e) {
-                exceptions.add(e);
+            } catch (IndyConnectionException ex) {
+                if (log.isWarnEnabled()) log.warn("Exception while opening Indy connection for network " + network);
+                exceptions.add(ex);
             }
 
+            if (log.isInfoEnabled()) log.info("Adding Indy connection for network " + network + ": " + indyConnection);
             indyConnections.put(network, indyConnection);
         });
-        if (!exceptions.isEmpty()) {
+
+        if (! exceptions.isEmpty()) {
             StringBuilder errorMessage = new StringBuilder();
-            for (IndyConnectionException e: exceptions){
+            for (IndyConnectionException e: exceptions) {
                 errorMessage.append(e.getMessage()).append("; ");
             }
             throw new IndyConnectionException(errorMessage.toString());
         }
 
         if (log.isInfoEnabled()) log.info("Opened " + indyConnections.size() + " Indy connections: " + indyConnections.keySet());
-        this.indyConnections = indyConnections;
+        this.indyConnections = new LinkedHashMap<>(indyConnections);
     }
 
     public synchronized IndyConnection getIndyConnection(String network, boolean autoReopen, boolean createSubmitterDid, boolean retrieveTaa) throws IndyConnectionException {
