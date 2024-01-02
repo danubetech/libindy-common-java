@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 public class IndyConnector {
 
@@ -48,7 +49,7 @@ public class IndyConnector {
         System.gc();
     }
 
-    public synchronized void openIndyConnections(boolean createSubmitterDid, boolean retrieveTaa) throws IndyConnectionException {
+    public synchronized void openIndyConnections(boolean createSubmitterDid, boolean retrieveTaa, boolean openParallel) throws IndyConnectionException {
 
         if (this.getPoolConfigs() == null || this.getPoolConfigs().isEmpty()) throw new IllegalStateException("No configuration found for Indy connections.");
 
@@ -144,9 +145,11 @@ public class IndyConnector {
 
         // create indy connections
 
-        Map<String, IndyConnection> indyConnections = Collections.synchronizedMap(new LinkedHashMap<>());
-        List<IndyConnectionException> exceptions = Collections.synchronizedList(new ArrayList<>());
-        poolConfigFiles.keySet().parallelStream().forEach(network -> {
+        Map<String, IndyConnection> indyConnections = openParallel ? Collections.synchronizedMap(new LinkedHashMap<>()) : new LinkedHashMap<>();
+        List<IndyConnectionException> exceptions = openParallel ? Collections.synchronizedList(new ArrayList<>()) : new ArrayList<>();
+        Stream<String> networks = openParallel ? poolConfigFiles.keySet().parallelStream() : poolConfigFiles.keySet().stream();
+
+        networks.forEach(network -> {
             String poolConfigName = poolConfigNames.get(network);
             String poolConfigFile = poolConfigFiles.get(network);
             Integer poolVersion = poolVersions.get(network);
@@ -192,6 +195,11 @@ public class IndyConnector {
 
         if (log.isInfoEnabled()) log.info("Opened " + indyConnections.size() + " Indy connections: " + indyConnections.keySet());
         this.indyConnections = new LinkedHashMap<>(indyConnections);
+    }
+
+    public synchronized void openIndyConnections(boolean createSubmitterDid, boolean retrieveTaa) throws IndyConnectionException {
+
+        this.openIndyConnections(createSubmitterDid, createSubmitterDid, false);
     }
 
     public synchronized IndyConnection getIndyConnection(String network, boolean autoReopen, boolean createSubmitterDid, boolean retrieveTaa) throws IndyConnectionException {
