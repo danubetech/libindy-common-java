@@ -196,9 +196,9 @@ public class IndyConnection {
             String submitterDidSeed = this.getSubmitterDidSeed();
             if (submitterDidSeed != null && submitterDidSeed.isEmpty()) submitterDidSeed = null;
             if ("_".equals(submitterDidSeed)) submitterDidSeed = null;
-            DidJSONParameters.CreateAndStoreMyDidJSONParameter createAndStoreMyDidJSONParameterTrustee = new DidJSONParameters.CreateAndStoreMyDidJSONParameter(null, submitterDidSeed, null, null);
-            DidResults.CreateAndStoreMyDidResult createAndStoreMyDidResultTrustee = Did.createAndStoreMyDid(this.getWallet(), createAndStoreMyDidJSONParameterTrustee.toJson()).get();
-            this.submitterDid = createAndStoreMyDidResultTrustee.getDid();
+            DidJSONParameters.CreateAndStoreMyDidJSONParameter createAndStoreMyDidJSONParameter = new DidJSONParameters.CreateAndStoreMyDidJSONParameter(null, submitterDidSeed, null, null);
+            DidResults.CreateAndStoreMyDidResult createAndStoreMyDidResult = Did.createAndStoreMyDid(this.getWallet(), createAndStoreMyDidJSONParameter.toJson()).get();
+            this.submitterDid = createAndStoreMyDidResult.getDid();
             this.randomSubmitterDid = submitterDidSeed == null;
             if (log.isInfoEnabled()) log.info("Submitter DID \"" + this.submitterDid + "\" (random: " + this.randomSubmitterDid + ") successfully created.");
         } catch (IndyException | InterruptedException | ExecutionException ex) {
