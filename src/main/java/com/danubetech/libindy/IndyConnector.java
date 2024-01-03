@@ -49,6 +49,13 @@ public class IndyConnector {
         System.gc();
     }
 
+    /**
+     * This opens the Indy pools and wallets for every configured network.
+     * @param createSubmitterDid Whether to create a local DID in the wallet that will be used for submitting queries to the ledger.
+     * @param retrieveTaa Whether to retrieve the Transaction Author Agreement from the ledger. This is needed for certain operations such as writing DIDs to the ledger.
+     * @param openParallel Whether to open pools and wallets in parallel threads. This speeds up the process if multiple networks are configured, but could also cause higher memory consumption.
+     * @throws IndyConnectionException
+     */
     public synchronized void openIndyConnections(boolean createSubmitterDid, boolean retrieveTaa, boolean openParallel) throws IndyConnectionException {
 
         if (this.getPoolConfigs() == null || this.getPoolConfigs().isEmpty()) throw new IllegalStateException("No configuration found for Indy connections.");
