@@ -3,10 +3,8 @@ package com.danubetech.libindy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Stream;
 
 public class IndyConnector {
 
@@ -51,7 +49,14 @@ public class IndyConnector {
         System.gc();
     }
 
-    public synchronized void openIndyConnections(boolean createSubmitterDid, boolean retrieveTaa) throws IndyConnectionException {
+    /**
+     * This opens the Indy pools and wallets for every configured network.
+     * @param createSubmitterDid Whether to create a local DID in the wallet that will be used for submitting queries to the ledger.
+     * @param retrieveTaa Whether to retrieve the Transaction Author Agreement from the ledger. This is needed for certain operations such as writing DIDs to the ledger.
+     * @param openParallel Whether to open pools and wallets in parallel threads. This speeds up the process if multiple networks are configured, but could also cause higher memory consumption.
+     * @throws IndyConnectionException
+     */
+    public synchronized void openIndyConnections(boolean createSubmitterDid, boolean retrieveTaa, boolean openParallel) throws IndyConnectionException {
 
         if (this.getPoolConfigs() == null || this.getPoolConfigs().isEmpty()) throw new IllegalStateException("No configuration found for Indy connections.");
 
@@ -147,9 +152,11 @@ public class IndyConnector {
 
         // create indy connections
 
-        Map<String, IndyConnection> indyConnections = new LinkedHashMap<>();
-        List<IndyConnectionException> exceptions = new ArrayList<>();
-        poolConfigFiles.keySet().parallelStream().forEach(network -> {
+        Map<String, IndyConnection> indyConnections = openParallel ? Collections.synchronizedMap(new LinkedHashMap<>()) : new LinkedHashMap<>();
+        List<IndyConnectionException> exceptions = openParallel ? Collections.synchronizedList(new ArrayList<>()) : new ArrayList<>();
+        Stream<String> networks = openParallel ? poolConfigFiles.keySet().parallelStream() : poolConfigFiles.keySet().stream();
+
+        networks.forEach(network -> {
             String poolConfigName = poolConfigNames.get(network);
             String poolConfigFile = poolConfigFiles.get(network);
             Integer poolVersion = poolVersions.get(network);
@@ -172,28 +179,34 @@ public class IndyConnector {
             if (attribEditSignMulti == null) exceptions.add(new IndyConnectionException("No 'attribEditSignMulti' for network: " + network));
             if (walletName == null) exceptions.add(new IndyConnectionException("No 'walletName' for network: " + network));
             if (submitterDidSeed == null) exceptions.add(new IndyConnectionException("No 'submitterDidSeed' for network: " + network));
-            if (poolVersion == null || nativeDidIndy == null || nymAddSignMulti == null || nymEditSignMulti == null
-            || attribAddSignMulti == null || attribEditSignMulti == null || walletName == null || submitterDidSeed == null)
-                return;
+            if (poolVersion == null || nativeDidIndy == null || nymAddSignMulti == null || nymEditSignMulti == null || attribAddSignMulti == null || attribEditSignMulti == null || walletName == null || submitterDidSeed == null) return;
             IndyConnection indyConnection = new IndyConnection(network, poolConfigName, poolConfigFile, poolVersion, nativeDidIndy, nymAddSignMulti, nymEditSignMulti, attribAddSignMulti, attribEditSignMulti, walletName, submitterDidSeed, genesisTimestamp);
             try {
                 indyConnection.open(createSubmitterDid, retrieveTaa);
-            } catch (IndyConnectionException e) {
-                exceptions.add(e);
+            } catch (IndyConnectionException ex) {
+                if (log.isWarnEnabled()) log.warn("Exception while opening Indy connection for network " + network);
+                exceptions.add(ex);
             }
 
+            if (log.isInfoEnabled()) log.info("Adding Indy connection for network " + network + ": " + indyConnection);
             indyConnections.put(network, indyConnection);
         });
-        if (!exceptions.isEmpty()) {
+
+        if (! exceptions.isEmpty()) {
             StringBuilder errorMessage = new StringBuilder();
-            for (IndyConnectionException e: exceptions){
+            for (IndyConnectionException e: exceptions) {
                 errorMessage.append(e.getMessage()).append("; ");
             }
             throw new IndyConnectionException(errorMessage.toString());
         }
 
         if (log.isInfoEnabled()) log.info("Opened " + indyConnections.size() + " Indy connections: " + indyConnections.keySet());
-        this.indyConnections = indyConnections;
+        this.indyConnections = new LinkedHashMap<>(indyConnections);
+    }
+
+    public synchronized void openIndyConnections(boolean createSubmitterDid, boolean retrieveTaa) throws IndyConnectionException {
+
+        this.openIndyConnections(createSubmitterDid, createSubmitterDid, false);
     }
 
     public synchronized IndyConnection getIndyConnection(String network, boolean autoReopen, boolean createSubmitterDid, boolean retrieveTaa) throws IndyConnectionException {
